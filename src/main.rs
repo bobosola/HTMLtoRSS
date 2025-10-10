@@ -5,13 +5,12 @@ use clipboard::ClipboardContext;
 use std::fs;
 use regex::Regex;
 
-
 fn main() {
     // Get the HTML file path from command line arguments
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Usage: {} <html-file-path> [--copy", args[0]);
+        eprintln!("Usage: {} <html-file-path> [--copy]", args[0]);
         std::process::exit(1);
     }
 
@@ -26,11 +25,13 @@ fn main() {
         }
     };
 
-    // Extract text between <main> and </main> tags
-    let main_content = extract_main_content(&html_content);
+    // Extract text between <main> and </main> tags and cut the first n lines
+    const LINES_TO_CUT: usize = 3;
+    let main_content = extract_main_content(&html_content, LINES_TO_CUT);
 
-    // Convert relative URLs to absolute ones (https://osola.org.uk)
-    let processed_content = convert_relative_urls(&main_content);
+    // Convert relative URLs to absolute ones
+    const BASE_URL: &str = "https://osola.org.uk/blog/";
+    let processed_content = convert_relative_urls(&main_content, BASE_URL);
 
     // Remove extraneous whitespace
     let cleaned_content = remove_extraneous_whitespace(&processed_content);
@@ -50,7 +51,7 @@ fn main() {
     }
 }
 
-fn extract_main_content(html: &str) -> String {
+fn extract_main_content(html: &str, cut_lines: usize) -> String {
     let main_start = "<main>";
     let main_end = "</main>";
 
@@ -69,22 +70,20 @@ fn extract_main_content(html: &str) -> String {
 
         // Split into lines and skip first 3 lines
         let mut lines: Vec<&str> = result.lines().collect();
-        if lines.len() > 3 {
-            lines.drain(0..3);
+        if lines.len() > cut_lines {
+            lines.drain(0..cut_lines);
             result = lines.join("\n");
         } else {
-            // If there are 3 or fewer lines, return empty string
             result = String::new();
         }
 
         return result;
     }
-
     // If no <main> tag found, return empty string
     String::new()
 }
 
-fn convert_relative_urls(content: &str) -> String {
+fn convert_relative_urls(content: &str, base_url: &str) -> String {
     // Regex to match href attributes and src attributes
     let url_regex = Regex::new(r#"(href|src|srcset)=\"([^\"]*)\""#).unwrap();
 
@@ -96,7 +95,7 @@ fn convert_relative_urls(content: &str) -> String {
         // Only convert if it's not already a full URL
         if !value.starts_with("http://") && !value.starts_with("https://") {
             // Convert relative path to absolute URL
-            format!("{}=\"https://osola.org.uk/blog/{}\"", attribute, value)
+            format!("{}=\"{}{}\"", attribute, base_url, value)
         } else {
             // Keep original full URL
             format!("{}=\"{}\"", attribute, value)
