@@ -8,6 +8,7 @@ use escaper::{encode_minimal};
 use chrono::Utc;
 use std::fs;
 use std::path::Path;
+use uuid::Uuid;
 
 fn main() {
 
@@ -48,7 +49,7 @@ fn main() {
     // Remove extraneous whitespace
     let cleaned_content = remove_extraneous_whitespace(&processed_content);
 
-    let rss_item = generate_rss_item(&title, &full_url, &cleaned_content, &full_url);
+    let rss_item = generate_rss_item(&title, &full_url, &cleaned_content);
 
     let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
     ctx.set_contents(rss_item.to_owned()).unwrap();
@@ -58,8 +59,7 @@ fn main() {
 fn generate_rss_item(
     title: &str,
     url: &str,
-    description_text: &str,
-    guid: &str,
+    description_text: &str
 ) -> String {
     format!(
         r#"<item>
@@ -75,7 +75,7 @@ fn generate_rss_item(
         url,
         description_text,
         Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string(),
-        guid
+        Uuid::new_v4()
     )
 }
 

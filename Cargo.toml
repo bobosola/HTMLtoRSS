@@ -8,3 +8,4 @@ regex = "1.11.3"
 clipboard = "0.5.0"
 escaper = "0.1.1"
 chrono = "0.4.42"
+uuid = { version = "1.0", features = ["v4"] }
