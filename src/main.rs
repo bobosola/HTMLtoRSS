@@ -12,10 +12,10 @@ use uuid::Uuid;
 
 fn main() {
 
-    const LINES_TO_CUT: usize = 3;  // cuts first n lines of text
+    const LINES_TO_CUT: usize = 3;  // cuts first n lines of text in <main> element
     const BASE_URL: &str = "https://osola.org.uk/blog/";
 
-    // Get the HTML file path & article title from command line arguments
+    // Get the HTML file path & article title from arguments
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
@@ -23,13 +23,14 @@ fn main() {
         std::process::exit(1);
     }
 
-    let html_file_path = &args[1];  // the HTML file name
+    let html_file_path = &args[1];
+    let full_url = format!("{}{}", BASE_URL, html_file_path);
     // Get the current working directory
     let cwd = fs::canonicalize(Path::new(".")).unwrap();
     let full_file_path = cwd.join(html_file_path);
 
-    let title = encode_minimal(&args[2]);  // the feed item title
-    let full_url = format!("{}{}", BASE_URL, html_file_path);
+    // Make the item title XML-safe
+    let title = encode_minimal(&args[2]);
 
     // Read the HTML file
     let html_content = match fs::read_to_string(&full_file_path) {
@@ -40,15 +41,16 @@ fn main() {
         }
     };
 
-    // Extract text between <main> and </main> tags and cut the first n lines
+    // Extract text between <main> and </main> elements and cut the first n lines
     let main_content = extract_main_content(&html_content, LINES_TO_CUT);
 
-    // Convert relative URLs to absolute ones
+    // Convert relative URLs to absolute
     let processed_content = convert_relative_urls(&main_content, BASE_URL);
 
     // Remove extraneous whitespace
     let cleaned_content = remove_extraneous_whitespace(&processed_content);
 
+    // Generate the full item text
     let rss_item = generate_rss_item(&title, &full_url, &cleaned_content);
 
     let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
@@ -56,11 +58,7 @@ fn main() {
     println!("✅ Copied to clipboard!");
 }
 
-fn generate_rss_item(
-    title: &str,
-    url: &str,
-    description_text: &str
-) -> String {
+fn generate_rss_item( title: &str, url: &str, text: &str) -> String {
     format!(
         r#"<item>
     <title>{}</title>
@@ -71,11 +69,7 @@ fn generate_rss_item(
     <pubDate>{}</pubDate>
     <guid>{}</guid>
 </item>"#,
-        title,
-        url,
-        description_text,
-        Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string(),
-        Uuid::new_v4()
+        title, url, text, Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string(), Uuid::new_v4()
     )
 }
 
@@ -83,36 +77,31 @@ fn extract_main_content(html: &str, cut_lines: usize) -> String {
     let main_start = "<main>";
     let main_end = "</main>";
 
-    // Find the start and end positions of <main> tag
+    // Find the start and end positions of <main> element
     let start_pos = html.find(main_start);
 
     if let Some(start) = start_pos {
-        // Find the end of main content
+        // Find the end of <main> content
         let end_pos = html.find(main_end).unwrap_or_else(|| html.len());
 
-        // Extract content between main tags (excluding the tags themselves)
+        // Add everything from after the <main> element to before the closing element
         let mut result = String::new();
-
-        // Add everything from after the main tag to before the closing tag
         result.push_str(&html[start + main_start.len()..end_pos]);
 
-        // Split into lines and skip first 3 lines
+        // Split into lines and skip cut_lines number of lines
         let mut lines: Vec<&str> = result.lines().collect();
         if lines.len() > cut_lines {
             lines.drain(0..cut_lines);
             result = lines.join("\n");
-        } else {
-            result = String::new();
         }
-
         return result;
     }
-    // If no <main> tag found, return empty string
+    // If no <main> element found, return empty string
     String::new()
 }
 
 fn convert_relative_urls(content: &str, base_url: &str) -> String {
-    // Regex to match href attributes and src attributes
+    // Regex to match attributes with paths
     let url_regex = Regex::new(r#"(href|src|srcset)=\"([^\"]*)\""#).unwrap();
 
     // Replace matches with absolute URLs
@@ -132,12 +121,8 @@ fn convert_relative_urls(content: &str, base_url: &str) -> String {
 }
 
 fn remove_extraneous_whitespace(content: &str) -> String {
-    // Replace multiple whitespace characters with single spaces
+    // Replace multiple whitespace characters with single spaces then trim
     let whitespace_regex = Regex::new(r"\s+").unwrap();
-
-    // Replace with single space, then trim
     let result = whitespace_regex.replace_all(content, " ").to_string();
-
-    // Trim leading/trailing whitespace
     result.trim().to_string()
 }
