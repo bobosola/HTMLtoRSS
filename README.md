@@ -44,7 +44,7 @@ The app produces an `<item>` element given the name of an html file and a title.
         ]]>
     </description>
     <pubDate>{the current date and time in the approved RSS format}</pubDate>
-    <guid>{url to article web page as unique identifer}</guid>
+    <guid>{unique identifer}</guid>
 </item>
 ```
 
