@@ -1,30 +1,63 @@
 # HTMLtoRSS
 
-Rough and ready text grabber largely coded by `qwen3-30b-a3b-instruct-2507-mlx`. It pulls content from a local file system HTML page and prepares it for pasting into an RSS XML feed file thus:
+Rough and ready text grabber largely coded by `qwen3-30b-a3b-instruct-2507-mlx` to create RSS feed entries from a local file system HTML page.
+
+Producing a simple RSS feed is easy. You will need:
+
+1) An `rss.xml` file somewhere like this:
+
+```XML
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <atom:link href="https://{your blog url}/rss.xml" rel="self" type="application/rss+xml" />
+        <title>My Mighty Blog</title>
+        <link>https://{your blog url}</link>
+        <description>A blog about my dull life</description>
+        <language>en-uk</language>
+        {item elements go here}
+    </channel>
+</rss>
+```
+
+2) Something like this in the `<head>` element of your home page:
+```html
+<link rel="alternate" type="application/rss+xml" title="RSS Feed for my Blog" href="/blog/rss.xml">
+```
+
+3) An RSS logo of your choice linking to the `rss.xml` file on your blog index page:
+```html
+<a href="/blog/rss.xml"><img src="/blog/images/pic_rss.gif" alt="RSS logo" width="36" height="14"></a>
+```
+
+This allows interested readers to subscribe to your feed either by pasting your home page URL into their feed reader or by clicking the RSS logo on your blog index page.
+
+The app produces an `<item>` element given the name of an html file and a title. It produces soemthing like this copied to clipboard ready for pasting into the `rss.xml` file inside the `<channel>` element:
 
 ```xml
 <item>
-    <title>{title text}</title>
-    <link>{url to web page}</link>
+    <title>Your article title</title>
+    <link>{url to article web page}</link>
     <description>
         <![CDATA[
-            {pasted text from HTMLtoRSS goes here}
+            {curated text from the html page}
         ]]>
     </description>
-    <pubDate>Wed, 22 Jul 2025 22:30:00 GMT</pubDate>
-    <guid>{any unique string such as url to webpage}</guid>
+    <pubDate>{the current date and time in the approved RSS format}</pubDate>
+    <guid>{url to article web page as unique identifer}</guid>
 </item>
 ```
 
-This is a highly specific tool written to convert blog pages on my own site to enable the page content to be easily pasted into an `rss.xml` file. It does the following:
+This was written to convert blog pages on my own site to enable the page content to be easily pasted into an `rss.xml` file. It does the following:
 
-* grabs all the text inside the `<main>` and `</main>` elements
-* ignores the first three lines (which are unwanted `H1` and `H2` tags)
-* converts all relative paths (i.e. anything with relative `href`, `src`, or `srcset` attributes) to full URL paths so that they will work in an external feed reader
+* grabs all the text inside the `<main>` element
+* ignores the first three lines (unwanted `H1` and `H2` tags in my case)
+* converts all relative paths with `href`, `src`, or `srcset` attributes to full URL paths so that they will work in an external feed reader
 * removes all extraneous white space used for formatting
-* optionally copies the result to clipboard for pasting directly into the `CDATA` element of an `rss.xml` file as above
+* creates an RSS `<item>` element as described above
+* copies the result to clipboard ready for pasting directly into the `rss.xml` file
 
-The following constants are set in `src/main.rs`:
+The following are set as constants in `src/main.rs`:
 * the base URL for the full path
 * the number of lines to cut
 
@@ -39,11 +72,11 @@ The executable will be in `/target/release` as `HTMLtoRSS`.
 
 ## Usage
 
-* `HTMLtoRSS <html-file-path>` to print to stdout
-* `HTMLtoRSS <html-file-path> --copy` to copy the output to clipboard for direct pasting into the `rss.xml` file
+`HTMLtoRSS html-file-path title` where:
+* `html-file-path` is the file name of the html file you want to grab the content from relative to the current working directory
+* `title` is your RSS feed article title
 
-You could make an alias to it in `/usr/local/bin` so that you could call it from anywhere:
+For example: `HTMLtoRSS blog/my_latest_article.htm "My article title"`
+
+I suggest making an alias to the app in `/usr/local/bin` so that you can call it from anywhere:
 `sudo ln -s /your/full/path/to/HTMLtoRSS/target/release/HTMLtoRSS /usr/local/bin/HTMLtoRSS`
-
-Then you could use it like this:
-`HTMLtoRSS path/to/yourfile.htm --copy`

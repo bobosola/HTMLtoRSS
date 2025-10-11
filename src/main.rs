@@ -1,54 +1,82 @@
 extern crate clipboard;
+extern crate escaper;
 
 use clipboard::ClipboardProvider;
 use clipboard::ClipboardContext;
-use std::fs;
 use regex::Regex;
+use escaper::{encode_minimal};
+use chrono::Utc;
+use std::fs;
+use std::path::Path;
 
 fn main() {
-    // Get the HTML file path from command line arguments
+
+    const LINES_TO_CUT: usize = 3;  // cuts first n lines of text
+    const BASE_URL: &str = "https://osola.org.uk/blog/";
+
+    // Get the HTML file path & article title from command line arguments
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Usage: {} <html-file-path> [--copy]", args[0]);
+        eprintln!("Usage: {} <html-file-path> <title>", args[0]);
         std::process::exit(1);
     }
 
-    let html_file_path = &args[1];
+    let html_file_path = &args[1];  // the HTML file name
+    // Get the current working directory
+    let cwd = fs::canonicalize(Path::new(".")).unwrap();
+    let full_file_path = cwd.join(html_file_path);
+
+    let title = encode_minimal(&args[2]);  // the feed item title
+    let full_url = format!("{}{}", BASE_URL, html_file_path);
 
     // Read the HTML file
-    let html_content = match fs::read_to_string(html_file_path) {
+    let html_content = match fs::read_to_string(&full_file_path) {
         Ok(content) => content,
         Err(_) => {
-            eprintln!("Error: Could not read file '{}'", html_file_path);
+            eprintln!("Error: Could not read file '{:?}'", &full_file_path);
             std::process::exit(1);
         }
     };
 
     // Extract text between <main> and </main> tags and cut the first n lines
-    const LINES_TO_CUT: usize = 3;
     let main_content = extract_main_content(&html_content, LINES_TO_CUT);
 
     // Convert relative URLs to absolute ones
-    const BASE_URL: &str = "https://osola.org.uk/blog/";
     let processed_content = convert_relative_urls(&main_content, BASE_URL);
 
     // Remove extraneous whitespace
     let cleaned_content = remove_extraneous_whitespace(&processed_content);
 
-    // Check if --copy flag is provided
-    let should_copy_to_clipboard = args.len() > 2 && args[2] == "--copy";
+    let rss_item = generate_rss_item(&title, &full_url, &cleaned_content, &full_url);
 
-    // Copy to clipboard when flag is provided
-    if should_copy_to_clipboard {
-        let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
-        ctx.set_contents(cleaned_content.to_owned()).unwrap();
-        println!("✅ Copied to clipboard!");
-    }
-    else {
-        // Output the result to terminal
-        println!("{}", cleaned_content);
-    }
+    let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
+    ctx.set_contents(rss_item.to_owned()).unwrap();
+    println!("✅ Copied to clipboard!");
+}
+
+fn generate_rss_item(
+    title: &str,
+    url: &str,
+    description_text: &str,
+    guid: &str,
+) -> String {
+    format!(
+        r#"<item>
+    <title>{}</title>
+    <link>{}</link>
+    <description><![CDATA[
+        {}
+    ]]></description>
+    <pubDate>{}</pubDate>
+    <guid>{}</guid>
+</item>"#,
+        title,
+        url,
+        description_text,
+        Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string(),
+        guid
+    )
 }
 
 fn extract_main_content(html: &str, cut_lines: usize) -> String {
