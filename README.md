@@ -32,7 +32,7 @@ Producing a simple RSS feed is easy. You will need:
 
 This allows interested readers to subscribe to your feed either by pasting your home page URL into their feed reader or by clicking the RSS logo on your blog index page.
 
-The app produces an `<item>` element given the name of an html file and a title. It produces soemthing like this copied to clipboard ready for pasting into the `rss.xml` file inside the `<channel>` element:
+The app produces an `<item>` element given the name of an html file and a title. It produces something like this copied to clipboard ready for pasting into the `rss.xml` file inside the `<channel>` element:
 
 ```xml
 <item>
