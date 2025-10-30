@@ -13,10 +13,11 @@ use url::Url;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /*************************  ALTER THESE TO SUIT  *************************/
-    // The base URL for converting relative urls to absolute
+    // The base URL for converting any relative urls to absolute
     const BASE_URL: &str = "https://osola.org.uk/blog";
 
     // The element which contains the content to be exported as an RSS item
+    // e.g. the <main> element but without the '<' and '>'
     const CONTENT_ELEMENT: &str = "main";
 
     // The number of lines to cut from the start of the content
@@ -96,7 +97,7 @@ fn extract_main_content( html: &str, cut_lines: usize, elem: &str) -> Result<Str
     Ok(result)
 }
 
-// Creates the new item element with all child elements as a formatted string
+// Creates the new item element with all its child elements as a formatted string
 fn generate_rss_item(title: &str, url: &str, description: &str) -> Result<String, Box<dyn std::error::Error>> {
 
     let mut w = Writer::new(Cursor::new(Vec::new()));
@@ -139,7 +140,7 @@ fn generate_rss_item(title: &str, url: &str, description: &str) -> Result<String
     pretty_xml(&result)
 }
 
-/// Formats/indents the xml element
+/// Indents the xml elements for easier human reading by adding spaces
 fn pretty_xml(input: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
     let mut reader = Reader::from_reader(input);
 
@@ -157,7 +158,7 @@ fn pretty_xml(input: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
     Ok(String::from_utf8(out)?)
 }
 
-/// Inserts the item into the RSS file before the edn of the <channel> element
+/// Inserts the item into the RSS file before the end of the </channel> element
 fn append_item_to_rss_file(rss_file: &str, item_xml: &str) -> Result<(), Box<dyn std::error::Error>> {
 
     if !rss_file.ends_with(".xml") {
