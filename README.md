@@ -1,18 +1,13 @@
 # HTML to RSS
 
-This is a command line application to create an RSS feed item from a local static HTML page and insert it into your RSS.xml file. It is designed for occasional bloggers who still use static HTML pages and who wish to add an RSS feed top their site. There is also a minimal demo RSS.xml file with instructions below for setting up an RSS feed from scratch.
+This is a command line application to create an RSS feed item from a local static HTML page and insert it into an RSS.xml file. It is designed for occasional bloggers who still use static HTML pages and who wish to add an RSS feed top their site. There is also a demo RSS.xml file with instructions below for setting up an RSS feed from scratch.
 
 The application does the following:
 * grabs all the text inside a nominated element
 * optionally ignores a number of lines to allow for the removal of unwanted headings etc.
 * converts all `href`, `src`, and `srcset` attributes to absolute URLs so that they will work in an external feed reader
 * removes all extraneous white space used for formatting
-* copies the result into your `rss.xml` file as a new feed item
-
-The following three constants must be set in `src/main.rs`:
-* `BASE_URL` - the URL for converting relative paths to full URLs
-* `CONTENT_ELEMENT` - the element which contains the content you wish to export to RSS
-* `LINES_TO_CUT` - the number of lines to ignore from the start of the chosen element
+* copies the result into the RSS.xml file as a new feed item with the date and time set to the time of insertion
 
 ## Output
 
@@ -32,18 +27,25 @@ The application produces a populated `<item>` element like this :
 </item>
 ```
 
-It may seem unintuitive to put the entire page content into the `<description>` element, but it's common practice these days, presumably because of the popularity of automated blog authoring tools. And it's definitely allowed in the [RSS 2.0 Specifications](https://www.rssboard.org/rss-specification#hrelementsOfLtitemgt). This approach has the advantage of allowing people to read successive articles in their entirety in a feed reader without having to jump in and out of a browser.
+It may seem unintuitive to put the entire page content into the `<description>` element, but it's common practice, and is allowed in the [RSS 2.0 Specifications](https://www.rssboard.org/rss-specification#hrelementsOfLtitemgt). This approach has the advantage of allowing people to read successive articles in their entirety in a feed reader without having to jump in and out of a browser.
 
 ## Build steps
 
+The following three constants must be edited accordingly in `src/main.rs`:
+* `BASE_URL` - the URL for converting relative paths to full URLs
+* `CONTENT_ELEMENT` - the element which contains the content you wish to export to RSS
+* `LINES_TO_CUT` - the number of lines to ignore from the start of the chosen element
+
+Then build the application thus:
 * [Install Rust](https://rust-lang.org/tools/install/)
 * `git clone https://github.com/bobosola/HTMLtoRSS.git`
 * `cd HTMLtoRSS`
 * `cargo build --release`
 
-The executable will be in `target/release` as `HTMLtoRSS`. To use the app from anywhere, I suggest moving it to `/usr/local/bin`:
+The executable will be in `target/release` as `HTMLtoRSS`. To use the app from anywhere, I suggest either moving it to `/usr/local/bin` or creating a link to it thus:
 
-* `sudo mv target/release/HTMLtoRSS /usr/local/bin`
+* `sudo mv target/release/HTMLtoRSS /usr/local/bin` or
+* `sudo ln -s /users/your_home/HTMLtoRSS/target/release/HTMLtoRSS /usr/local/bin/HTMLtoRSS`
 
 ## Usage
 
@@ -52,15 +54,15 @@ The application requires three arguments:
 * the title text for the item as it will appear in a feed reader
 * the RSS.xml file relative to the current directory
 
-For example, assuming you are in your site root directory and the file to grab the content from is in the `blog` subdirectory and the RSS.xml file is also in the `blog` directory:
+For example, assuming you are in your site root directory and the file to grab the content from is in the `blog` subdirectory and the RSS.xml file is also in the `blog` subdirectory, then run the app like this:
 
 `HTMLtoRSS blog/my_latest_article.htm "My article title" blog/rss.xml`
 
-The application will confirm success on successful insertion of the new item.
+The application will confirm success on insertion of the new item.
 
 ## Requirements
 
-You will need an `rss.xml` file somewhere on your site. You can copy the included demo `rss.xml` file which is a minimal valid RSS.xml file. Change the various values accordingly.
+You will need a valid `rss.xml` file somewhere on your site. You can copy the included demo `rss.xml` file which is a minimal valid RSS.xml file. Change the various values accordingly.
 
 You should also place a `<link>` element in the `<head>` section of your home page linking to your `rss.xml` file:
 ```html
