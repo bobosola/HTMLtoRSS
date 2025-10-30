@@ -1,127 +1,219 @@
-extern crate clipboard;
-extern crate escaper;
-
-use clipboard::ClipboardProvider;
-use clipboard::ClipboardContext;
-use regex::Regex;
-use escaper::{encode_minimal};
-use chrono::Utc;
-use std::fs;
+use quick_xml::events::{BytesEnd, BytesStart, BytesText, BytesCData, Event};
+use quick_xml::writer::Writer;
+use quick_xml::reader::Reader;
+use scraper::{Html, Selector};
+use std::io::Cursor;
 use std::path::Path;
+use std::fs;
 use uuid::Uuid;
+use chrono::Utc;
+use regex::Regex;
+use url::Url;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    const LINES_TO_CUT: usize = 3;  // cuts first n lines of text in <main> element
-    const BASE_URL: &str = "https://osola.org.uk/blog/";
+    /*************************  ALTER THESE TO SUIT  *************************/
+    // The base URL for converting relative urls to absolute
+    const BASE_URL: &str = "https://osola.org.uk/blog";
 
-    // Get the HTML file path & article title from arguments
+    // The element which contains the content to be exported as an RSS item
+    const CONTENT_ELEMENT: &str = "main";
+
+    // The number of lines to cut from the start of the content
+    // (e.g. unwanted headings etc.)
+    const LINES_TO_CUT: usize = 3;
+    /************************************************************************/
+
     let args: Vec<String> = std::env::args().collect();
-
-    if args.len() < 2 {
-        eprintln!("Usage: {} <html-file-path> <title>", args[0]);
+    if args.len() < 4 {
+        println!("\nUsage: {} <html file> '<item title>' <rss file>", args[0]);
+        println!("NB: file paths are relative to current directory\n");
         std::process::exit(1);
     }
+    let html_file = &args[1];
+    let title = &args[2];
+    let rss_file = &args[3];
 
-    let html_file_path = &args[1];
-    let full_url = format!("{}{}", BASE_URL, html_file_path);
-    // Get the current working directory
-    let cwd = fs::canonicalize(Path::new(".")).unwrap();
-    let full_file_path = cwd.join(html_file_path);
-
-    // Make the item title XML-safe
-    let title = encode_minimal(&args[2]);
-
-    // Read the HTML file
-    let html_content = match fs::read_to_string(&full_file_path) {
-        Ok(content) => content,
-        Err(_) => {
-            eprintln!("Error: Could not read file '{:?}'", &full_file_path);
-            std::process::exit(1);
-        }
-    };
-
-    // Extract text between <main> and </main> elements and cut the first n lines
-    let main_content = extract_main_content(&html_content, LINES_TO_CUT);
-
-    // Convert relative URLs to absolute
-    let processed_content = convert_relative_urls(&main_content, BASE_URL);
-
-    // Remove extraneous whitespace
-    let cleaned_content = remove_extraneous_whitespace(&processed_content);
-
-    // Generate the full item text
-    let rss_item = generate_rss_item(&title, &full_url, &cleaned_content);
-
-    let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
-    ctx.set_contents(rss_item.to_owned()).unwrap();
-    println!("✅ Copied to clipboard!");
-}
-
-fn generate_rss_item( title: &str, url: &str, text: &str) -> String {
-    format!(
-        r#"<item>
-    <title>{}</title>
-    <link>{}</link>
-    <description><![CDATA[
-        {}
-    ]]></description>
-    <pubDate>{}</pubDate>
-    <guid>{}</guid>
-</item>"#,
-        title, url, text, Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string(), Uuid::new_v4()
-    )
-}
-
-fn extract_main_content(html: &str, cut_lines: usize) -> String {
-    let main_start = "<main>";
-    let main_end = "</main>";
-
-    // Find the start and end positions of <main> element
-    let start_pos = html.find(main_start);
-
-    if let Some(start) = start_pos {
-        // Find the end of <main> content
-        let end_pos = html.find(main_end).unwrap_or_else(|| html.len());
-
-        // Add everything from after the <main> element to before the closing element
-        let mut result = String::new();
-        result.push_str(&html[start + main_start.len()..end_pos]);
-
-        // Split into lines and skip cut_lines number of lines
-        let mut lines: Vec<&str> = result.lines().collect();
-        if lines.len() > cut_lines {
-            lines.drain(0..cut_lines);
-            result = lines.join("\n");
-        }
-        return result;
+    let html_file_path = Path::new(html_file);
+    if !html_file_path.exists(){
+         return Err("The HTML file does not exist".into());
     }
-    // If no <main> element found, return empty string
-    String::new()
+
+    // Ensure the base url has a trailing slash
+    // and create the full url for the html page
+    let base_url = match BASE_URL.ends_with("/") {
+        true => Url::parse(BASE_URL)?,
+        false => Url::parse(&format!("{}/", BASE_URL))?
+    };
+    let full_url = base_url.join(html_file)?;
+
+    // Get the contents of the HTML file
+    let html_content = fs::read_to_string(html_file_path)
+        .map_err(|_| format!("Could not read file '{}'", html_file))?;
+
+    // Extract the content from the chosen element
+    let main_content = extract_main_content(&html_content, LINES_TO_CUT, CONTENT_ELEMENT)
+        .map_err(|e| format!("Error extracting content: {}", e))?;
+
+    // Fix up any relative urls in the extracted content
+    // and remove all unecessary whitespace
+    let corrected_content = convert_relative_urls(&main_content, base_url)?;
+    let compressed_content = remove_whitespace(&corrected_content);
+
+    // Generate the new RSS item from the compressed content
+    let rss_item = generate_rss_item(title, &full_url.as_str(), &compressed_content)?;
+
+    // Insert the new item into the RSS file
+    append_item_to_rss_file(&rss_file, &rss_item)?;
+    Ok(())
 }
 
-fn convert_relative_urls(content: &str, base_url: &str) -> String {
+/// Obtains the inner HTML text from a given element in an HTML file
+/// optionally removing the first n lines
+fn extract_main_content( html: &str, cut_lines: usize, elem: &str) -> Result<String, Box<dyn std::error::Error>> {
+
+    // Parse HTML using the scraper crate
+    let document = Html::parse_document(html);
+
+    // Create a selector for the target element
+    let selector = Selector::parse(elem)
+        .map_err(|e| format!("Invalid CSS selector '{}': {}", elem, e))?;
+
+    // Find the first matching element
+    let element = document.select(&selector).next()
+        .ok_or(format!("Could not find <{}> element in HTML", elem))?;
+
+    // Extract the inner HTML from the element
+    let content = element.inner_html();
+
+    // Cut lines from the beginning
+    let lines: Vec<&str> = content.lines().collect();
+    let result = if (lines.len() > cut_lines) && (cut_lines > 0){
+        lines[cut_lines..].join("\n")
+    } else {
+        content
+    };
+    Ok(result)
+}
+
+// Creates the new item element with all child elements as a formatted string
+fn generate_rss_item(title: &str, url: &str, description: &str) -> Result<String, Box<dyn std::error::Error>> {
+
+    let mut w = Writer::new(Cursor::new(Vec::new()));
+
+    // Start item element
+    w.write_event(Event::Start(BytesStart::new("item")))?;
+
+    // Add title
+    w.write_event(Event::Start(BytesStart::new("title")))?;
+    w.write_event(Event::Text(BytesText::new(title)))?;
+    w.write_event(Event::End(BytesEnd::new("title")))?;
+
+    // Add link
+    w.write_event(Event::Start(BytesStart::new("link")))?;
+    w.write_event(Event::Text(BytesText::new(url)))?;
+    w.write_event(Event::End(BytesEnd::new("link")))?;
+
+    // Add description with CDATA
+    w.write_event(Event::Start(BytesStart::new("description")))?;
+    w.write_event(Event::CData(BytesCData::new(description)))?;
+    w.write_event(Event::End(BytesEnd::new("description")))?;
+
+    // Add pubDate
+    w.write_event(Event::Start(BytesStart::new("pubDate")))?;
+    let pub_date = Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string();
+    w.write_event(Event::Text(BytesText::new(&pub_date)))?;
+    w.write_event(Event::End(BytesEnd::new("pubDate")))?;
+
+    // Add guid
+    w.write_event(Event::Start(BytesStart::new("guid")))?;
+    let guid = Uuid::new_v4().to_string();
+    w.write_event(Event::Text(BytesText::new(&guid)))?;
+    w.write_event(Event::End(BytesEnd::new("guid")))?;
+
+    // End item element
+    w.write_event(Event::End(BytesEnd::new("item")))?;
+
+    // Get the result
+    let result = w.into_inner().into_inner();
+    pretty_xml(&result)
+}
+
+/// Formats/indents the xml element
+fn pretty_xml(input: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
+    let mut reader = Reader::from_reader(input);
+
+    let mut out = Vec::new();
+    let mut writer = Writer::new_with_indent(&mut out, b' ', 12); // 12-space indent
+
+    let mut buf = Vec::new();
+    loop {
+        match reader.read_event_into(&mut buf)? {
+            Event::Eof => break,
+            ev => writer.write_event(ev)?, // every event is re-emitted indented
+        }
+        buf.clear();
+    }
+    Ok(String::from_utf8(out)?)
+}
+
+/// Inserts the item into the RSS file before the edn of the <channel> element
+fn append_item_to_rss_file(rss_file: &str, item_xml: &str) -> Result<(), Box<dyn std::error::Error>> {
+
+    if !rss_file.ends_with(".xml") {
+        return Err("The RSS file is not an XML file".into());
+    }
+    let file_path = Path::new(rss_file);
+    if !file_path.exists(){
+        return Err("The XML file does not exist".into());
+    }
+
+    let rss_content = fs::read_to_string(file_path)?;
+
+    // Find the closing </channel> tag and insert the item before it
+    let channel_end = rss_content.find("</channel>");
+    if let Some(pos) = channel_end {
+        let (before, after) = rss_content.split_at(pos);
+        let updated = format!("{}    {}\n    {}", before, item_xml, after);
+        fs::write(file_path, updated)?;
+    } else {
+        return Err("Could not find </channel> tag in RSS file".into());
+    }
+
+    println!("✅ RSS item inserted into {}", rss_file);
+    Ok(())
+}
+
+/// Finds all href, src, and srcset attributes
+/// and converts all relative urls to absolute urls
+fn convert_relative_urls(content: &str, base_url: Url) -> Result<String, Box<dyn std::error::Error>>  {
+
     // Regex to match attributes with paths
-    let url_regex = Regex::new(r#"(href|src|srcset)=\"([^\"]*)\""#).unwrap();
+    let url_regex = Regex::new(r#"(href|src|srcset)=\"([^\"]*)\""#)?;
 
     // Replace matches with absolute URLs
-    url_regex.replace_all(content, |caps: &regex::Captures| {
+    let converted = url_regex.replace_all(content, |caps: &regex::Captures | {
         let attribute = caps.get(1).unwrap().as_str();
         let value = caps.get(2).unwrap().as_str();
-
         // Only convert if it's not already a full URL
-        if !value.starts_with("http://") && !value.starts_with("https://") {
-            // Convert relative path to absolute URL
-            format!("{}=\"{}{}\"", attribute, base_url, value)
-        } else {
+        if value.starts_with("http") {
             // Keep original full URL
             format!("{}=\"{}\"", attribute, value)
+        } else {
+            // Try to join the base url to the relative fragment
+            // but just send back the fragment if the join fails for some reason
+            let full_url = match base_url.join(value) {
+                Ok(url) => url.to_string(),
+                Err(_) => value.to_string()
+            };
+            format!("{}=\"{}\"", attribute, full_url.as_str())
         }
-    }).to_string()
+    }).to_string();
+    Ok(converted)
 }
 
-fn remove_extraneous_whitespace(content: &str) -> String {
-    // Replace multiple whitespace characters with single spaces then trim
+ /// Replace multiple whitespace characters with single spaces
+fn remove_whitespace(content: &str) -> String {
     let whitespace_regex = Regex::new(r"\s+").unwrap();
     let result = whitespace_regex.replace_all(content, " ").to_string();
     result.trim().to_string()

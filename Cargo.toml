@@ -1,11 +1,20 @@
 [package]
 name = "HTMLtoRSS"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
-regex = "1.11.3"
-clipboard = "0.5.0"
-escaper = "0.1.1"
-chrono = "0.4.42"
+# Simple, fast, and feature-complete XML parser
+quick-xml = "0.38.3"
+
+# HTML parsing and manipulation
+scraper = "0.20"
+
+# UUID generation for RSS GUIDs
 uuid = { version = "1.0", features = ["v4"] }
+
+# Date/time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+regex = "1.11.3"
+url = "2.5.7"

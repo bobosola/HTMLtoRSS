@@ -1,19 +1,22 @@
 # HTML to RSS
 
-This is a simple text grabber to create an RSS feed `<item>` element from a local file system HTML page, such as a blog page. It does the following:
+This is a command line application to create an RSS feed item from a local static HTML page and insert it into your RSS.xml file. It is designed for occasional bloggers who still use static HTML pages and who wish to add an RSS feed top their site. There is also a minimal demo RSS.xml file with instructions below for setting up an RSS feed from scratch.
 
-* grabs all the text inside the `<main>` element ignoring the first `LINES_TO_CUT` number of lines to allow for the removal of headings or anything else you don't need
-* converts all elements with relative paths (i.e. those with `href`, `src`, or `srcset` attributes) to full URL paths so that they will work in an external feed reader
+The application does the following:
+* grabs all the text inside a nominated element
+* optionally ignores a number of lines to allow for the removal of unwanted headings etc.
+* converts all `href`, `src`, and `srcset` attributes to absolute URLs so that they will work in an external feed reader
 * removes all extraneous white space used for formatting
-* copies the result to clipboard as a populated RSS `<item>` element (as described below) ready for pasting directly into an `rss.xml` file
+* copies the result into your `rss.xml` file as a new feed item
 
-The following two constants must be set in `src/main.rs`:
+The following three constants must be set in `src/main.rs`:
 * `BASE_URL` - the URL for converting relative paths to full URLs
-* `LINES_TO_CUT` - the number of lines to ignore from the start of the `<main>` element
+* `CONTENT_ELEMENT` - the element which contains the content you wish to export to RSS
+* `LINES_TO_CUT` - the number of lines to ignore from the start of the chosen element
 
-## Application description
+## Output
 
-The application requires (i) an html file path and (ii) the title text as arguments. It produces a populated `<item>` element like this :
+The application produces a populated `<item>` element like this :
 
 ```xml
 <item>
@@ -29,7 +32,7 @@ The application requires (i) an html file path and (ii) the title text as argume
 </item>
 ```
 
-It may seem odd to put the entire page content into the `<description>` element, but it's common practice these days, presumably because of the popularity of automated blog authoring tools. And it's allowed in the [RSS 2.0 Specifications](https://www.rssboard.org/rss-specification#hrelementsOfLtitemgt). So I have adopted this practice here. It also has the advantage of allowing people to read successive articles in their entirety in a feed reader without having to jump in and out of a browser.
+It may seem unintuitive to put the entire page content into the `<description>` element, but it's common practice these days, presumably because of the popularity of automated blog authoring tools. And it's definitely allowed in the [RSS 2.0 Specifications](https://www.rssboard.org/rss-specification#hrelementsOfLtitemgt). This approach has the advantage of allowing people to read successive articles in their entirety in a feed reader without having to jump in and out of a browser.
 
 ## Build steps
 
@@ -44,52 +47,29 @@ The executable will be in `target/release` as `HTMLtoRSS`. To use the app from a
 
 ## Usage
 
-`HTMLtoRSS html-file-path title` where:
-* `html-file-path` is the file name of the html file you want to grab the content from relative to the current working directory
-* `title` is your RSS feed article title
+The application requires three arguments:
+* an HTML file path relative to the current directory
+* the title text for the item as it will appear in a feed reader
+* the RSS.xml file relative to the current directory
 
-For example, assuming you are in your site root directory and the file to grab the content from is in the `blog` subdirectory:
+For example, assuming you are in your site root directory and the file to grab the content from is in the `blog` subdirectory and the RSS.xml file is also in the `blog` directory:
 
-`HTMLtoRSS blog/my_latest_article.htm "My article title"`
+`HTMLtoRSS blog/my_latest_article.htm "My article title" blog/rss.xml`
 
-The application will confirm success by printing:
+The application will confirm success on successful insertion of the new item.
 
-`✅ Copied to clipboard!`
+## Requirements
 
-## Producing a simple RSS feed
+You will need an `rss.xml` file somewhere on your site. You can copy the included demo `rss.xml` file which is a minimal valid RSS.xml file. Change the various values accordingly.
 
-This is a quick how-to for anyone new to creating an RSS feed. You will need the following:
-
-1) An `rss.xml` file somewhere on your site:
-
-```XML
-<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-    <channel>
-        <atom:link href="https://yoursite.com/blog/rss.xml" rel="self" type="application/rss+xml" />
-        <title>My Mighty Blog</title>
-        <link>https://yoursite.com/blog</link>
-        <description>A blog about my dull life</description>
-        <language>en-uk</language>
-        <item>...</item>
-        <item>...</item>
-        ...
-    </channel>
-</rss>
-```
-
-2) A `<link>` in the `<head>` of your home page linking to `rss.xml`:
+You should also place a `<link>` element in the `<head>` section of your home page linking to your `rss.xml` file:
 ```html
 <link rel="alternate" type="application/rss+xml" title="RSS Feed for my Blog" href="/blog/rss.xml">
 ```
+This will allow interested people to subscribe to your feed by pasting your home page URL into their feed reader.
 
-3) An RSS logo of your choice in a suitable location also linking to `rss.xml` file:
+Another option is to insert an RSS logo of your choice in a suitable location which also links to the `rss.xml` file:
 ```html
 <a href="/blog/rss.xml"><img src="/blog/images/rss_logo.gif" alt="RSS logo" width="36" height="14"></a>
 ```
-
-Items 2) and 3) allow interested people to subscribe to your feed either by:
-* pasting your home page URL into their feed reader or
-* by clicking the RSS logo and copying the URL to their feed reader
-
-You can then use this application to produce populated `<item>` elements from your site HTML pages and paste each one into the `<channel>` element.
+Back in the day this would cause browsers to open a built-in feed reader, but nearly all modern browsers no longer support this. So clicking the logo will just show the raw feed xml. But the linked URL can also be used to paste into a feed reader to subscribe to the site.
