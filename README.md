@@ -42,10 +42,14 @@ Then build the application thus:
 * `cd HTMLtoRSS`
 * `cargo build --release`
 
-The executable will be in `target/release` as `HTMLtoRSS`. To use the app from anywhere, I suggest either moving it to `/usr/local/bin` or creating a link to it thus:
+The executable will be in `target/release` as `HTMLtoRSS`. On Windows, the executable will be called `HTMLtoRSS.exe`. You can use PowerShell or another other Windows terminal to run it.
+
+To use the app from anywhere on Macs and Unix machines, I suggest either moving it to `/usr/local/bin` or creating a link to it thus:
 
 * `sudo mv target/release/HTMLtoRSS /usr/local/bin` or
 * `sudo ln -s /users/your_home/HTMLtoRSS/target/release/HTMLtoRSS /usr/local/bin/HTMLtoRSS`
+
+
 
 ## Usage
 
