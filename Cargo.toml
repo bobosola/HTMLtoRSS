@@ -2,19 +2,19 @@
 name = "HTMLtoRSS"
 version = "0.1.0"
 edition = "2021"
+authors = ["bobosola@gmail.com"]
+description = "Convert HTML content to RSS feed item"
+license = "MIT"
+repository = "https://github.com/bobosola/HTMLtoRSS"
+keywords = ["rss", "html", "feed", "xml", "converter"]
+categories = ["command-line-utilities", "web-programming"]
 
 [dependencies]
-# Simple, fast, and feature-complete XML parser
-quick-xml = "0.38.3"
-
-# HTML parsing and manipulation
-scraper = "0.20"
-
-# UUID generation for RSS GUIDs
-uuid = { version = "1.0", features = ["v4"] }
-
-# Date/time handling
+clap = { version = "4.0", features = ["derive"] }
+scraper = "0.18"
+url = "2.3"
 chrono = { version = "0.4", features = ["serde"] }
-
-regex = "1.11.3"
-url = "2.5.7"
+uuid = { version = "1.0", features = ["v4"] }
+reqwest = { version = "0.11", features = ["blocking"] }
+tokio = { version = "1.0", features = ["full"] }
+regex = "1.0"
