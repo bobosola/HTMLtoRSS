@@ -9,8 +9,9 @@
         <item>
             <title>Rust Programming Language Overview</title>
             <link>https://osola.org.uk/blog/sample.html</link>
-            <description><![CDATA[<p>Rust is a systems programming language that focuses on safety, speed, and concurrency. It accomplishes these goals by being memory safe without using garbage collection.</p> <img src="https://osola.org.uk/blog/images/rust-logo.png" width="300" height="200" alt="Rust Programming Language"> <h2>Key Features</h2> <ul> <li>Memory safety without garbage collection</li> <li>Zero-cost abstractions</li> <li>Move semantics</li> <li>Guaranteed memory safety</li> <li>Threads without data races</li> </ul> <p>Learn more about Rust at <a href="https://rust-lang.org">the official website</a> or check out the <a href="https://osola.org.uk/documentation">documentation</a>.</p> </main>]]></description>
+            <description><![CDATA[<p>Rust is a systems programming language that focuses on safety, speed, and concurrency. It accomplishes these goals by being memory safe without using garbage collection.</p> <img src="https://osola.org.uk/blog/images/rust-logo.png" width="300" height="200" alt="Rust Programming Language"> <h2>Key Features</h2> <ul> <li>Memory safety without garbage collection</li> <li>Zero-cost abstractions</li> <li>Move semantics</li> <li>Guaranteed memory safety</li> <li>Threads without data races</li> </ul> <p>Learn more about Rust at <a href="https://rust-lang.org">the official website</a> or check out the <a href="https://osola.org.uk/documentation">documentation</a>.</p>]]></description>
             <pubDate>Fri, 31 Oct 2025 14:09:48 GMT</pubDate>
-            <guid>f594eb3a-027b-4357-b87b-8b3a204f6360</guid>
+            <guid>https://osola.org.uk/blog/sample.html</guid>
         </item>
     </channel>
+</rss>
