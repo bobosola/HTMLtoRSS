@@ -93,9 +93,11 @@ You will need a valid `rss.xml` file somewhere locally. You can copy the include
 
 ## Creating an RSS feed
 
-1) Populate your `rss.xml` file with items as above and place it on your site.
+1) Populate your `rss.xml` file with items as above and upload it to your site.
 
-2) Place a `<link>` element in the `<head>` section of your home page linking to your `rss.xml` file:
+2) Check the file is valid at [https://validator.w3.org/feed/](https://validator.w3.org/feed/) by entering the full URL of your `rss.xml` file.
+
+3) Place a `<link>` element in the `<head>` section of your home page linking to your `rss.xml` file:
 ```html
 <link rel="alternate" type="application/rss+xml" title="RSS Feed for my Blog" href="/blog/rss.xml">
 ```
