@@ -41,13 +41,13 @@ For example, assuming you are in your site root directory and the file to grab t
 
 `HTMLtoRSS --html blog/holiday.html --rss blog/rss.xml --parent-url https://yoursite.com/blog`
 
-This will create a new RSS item from all the content in the `<main>` element of the local file `blog/holiday.htm` with the title copied from the first `<h1>` element with the item date as the current date and time.
+This will create a new RSS item from all the content in the `<main>` element of the local file `blog/holiday.html` with the title copied from the first `<h1>` element with the item date as the current date and time.
 
 Here's another example:
 
 `HTMLtoRSS --html https://yoursite.com/blog/holiday.html --rss blog/rss.xml --parent-url https://yoursite.com/blog --title "My Holday in France" --selector body --lines-to-cut 3 --date-time "2024-01-31 22:30"`
 
-This will create a new RSS item from the `<body>` element of the website page `https://yoursite/blog/holiday.html` with the title "My Holiday in France" and the first 3 content lines removed (perhaps an `<h1>` or other element you didn't want in the feed item) with the date set as `Wed, 31 Jan 2024 22:30:00 +0000` to match the required RSS date format
+This will create a new RSS item from the `<body>` element of the website page `https://yoursite/blog/holiday.html` with the title "My Holiday in France" and the first 3 content lines removed (perhaps an `<h1>` or other element you didn't want in the feed item) with the date set as `Wed, 31 Jan 2024 22:30:00 +0000` to match the required RSS date format.
 
 In both cases, all images, links and other elements with a relative or root-relative URL will be be converted to absolute URLs so that (e.g.) an image in the HTML with a `src` attribute value of `images/holiday01.jpg` wil be converted to `https://yoursite.com/blog/images/holiday01.jpg` so that all resources and links will work in the feed reader.
 
@@ -96,7 +96,7 @@ You will need a valid `rss.xml` file somewhere locally. You can copy the include
 
 2) Upload it to your site.
 
-2) Check the file is valid at [https://validator.w3.org/feed/](https://validator.w3.org/feed/) by entering the full URL of your `rss.xml` file. Note that if you use the option of pasting in the file text as opposed to entering a URL then you will see a `Self reference doesn't match document location` error. This error disappears when using the URL checking method assuming that you entered the file's URL correctly in the <atom:link> element.
+2) Check the file is valid at [https://validator.w3.org/feed/](https://validator.w3.org/feed/) by entering the full URL of your `rss.xml` file. Note that if you use the option of pasting in the file text as opposed to entering a URL then you will see a `Self reference doesn't match document location` error. This error disappears when using the URL checking method (assuming that you entered the file's URL correctly in the `<atom:link>` element).
 
 3) Place a `<link>` element in the `<head>` section of your home page linking to your `rss.xml` file like this:
 ```html
@@ -104,7 +104,7 @@ You will need a valid `rss.xml` file somewhere locally. You can copy the include
 ```
 This will allow interested people to subscribe to your feed by pasting your home page URL into their feed reader.
 
-Option: insert an RSS logo of your choice in a suitable location which also links to the `rss.xml` file:
+5) Optionally insert an RSS logo of your choice in a suitable location which also links to the `rss.xml` file:
 ```html
 <a href="/blog/rss.xml"><img src="/blog/images/rss_logo.gif" alt="RSS logo" width="36" height="14"></a>
 ```
