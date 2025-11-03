@@ -1,5 +1,7 @@
 # HTMLtoRSS Specifications for LLM
 
+**Comment: This was passed to my local LLM `qwen3-coder-30b-a3b-instruct-mlx` to write the first draft. It did a decent job, however many improvement were made manually afterwards.**
+
 A robust Rust command-line tool for converting a fragment of HTML content to an RSS feed item. It is designed for bloggers who use static HTML pages and want to add RSS feed functionality to their site.
 
 The application arguments should be:
@@ -7,7 +9,7 @@ The application arguments should be:
  - the relative path and name of the RSS.xml file in which to insert the new item
  - a base URL (e.g. 'https://sitename/blog') to allow any relative URLs in the text to be converted to absolute URLs
  - an optional name of a CSS selector from which to extract the HTML content from the HTML file or URL, should default to "main" if not supplied
- - an optional Title argument for the item Title element, should default to the text from the first <h1> element if not supplied
+ - an optional Title argument for the item Title element, should default to the text from the first ```<h1>` element if not supplied
  - an optional lines-to-cut argument which, if supplied, will cut the first n lines of the HTML text to remove any unwanted content
  - an optional dry run mode to display the output to the terminal for testing purposes - NB: only text output is required, no XML or JSON
 
