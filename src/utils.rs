@@ -1,4 +1,4 @@
-use chrono::{DateTime, ParseError, FixedOffset, Utc};
+use chrono::{DateTime, ParseError, FixedOffset, Utc, TimeZone};
 use url::Url;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
@@ -16,7 +16,8 @@ pub fn now_rfc2822() -> String {
     Utc::now().to_rfc2822()
 }
 
-/// Parse an arbitrary date string and return it in RFC-2822 format.
+/// Parse an arbitrary date string and return it in RFC-2822 format
+/// which is accepted by RSS readers.
 /// Accepted inputs are anything that `chrono` can understand
 /// If the string has no time-zone information, UTC is assumed.
 pub fn parse_to_rfc2822(input: &str) -> Result<String, ParseError> {
@@ -139,15 +140,17 @@ mod tests {
     #[test]
     fn check_various_date_formats() {
         let cases = vec![
-            ("2021-06-02 14:30", "Wed, 02 Jun 2021 14:30:00 +0000"),
-            ("Wed, 02 Jun 2021 14:30:00 +0000", "Wed, 02 Jun 2021 14:30:00 +0000"),
-            ("2021-06-02T14:30:00Z", "Wed, 02 Jun 2021 14:30:00 +0000"),
+            ("2022-06-02 14:30", "Thu, 2 Jun 2022 14:30:00 +0000"),
+            ("Fri, 02 Jun 2023 14:30:00 +0000", "Fri, 2 Jun 2023 14:30:00 +0000"),
+            ("2024-06-02T14:30:00Z", "Sun, 2 Jun 2024 14:30:00 +0000"),
+            ("2024-06-16T14:30:00Z", "Sun, 16 Jun 2024 14:30:00 +0000"),
         ];
 
         for (inp, exp) in cases {
             assert_eq!(parse_to_rfc2822(inp).unwrap(), exp);
         }
     }
+
 
     /******************** URL merging **********************/
 
