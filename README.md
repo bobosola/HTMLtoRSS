@@ -16,7 +16,7 @@ There is also a demo RSS.xml file with instructions below for setting up a new R
 * requires a parent URL to be supplied to convert all relative (or root relative) `href`, `src`, and `srcset` attributes to absolute URLs so that they will work in an external feed reader, e.g. if the chosen page is in the `https://www.site/blog` directory, then use that as the parent URL
 * removes all extraneous whitespace in the extracted content
 * optionally ignores a number of lines from the beginning of the content to allow for the removal of unwanted headings etc.
-* copies the result into the RSS.xml file as a new `item` element with an optional date and time which, if omitted, defaults to the time of the insertion
+* copies the result into the RSS.xml file as a new `item` element with an optional date and time which, if omitted, defaults to the time of the insertion.
 
 ## Usage
 
