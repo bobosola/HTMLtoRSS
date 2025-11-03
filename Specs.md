@@ -1,6 +1,6 @@
 # HTMLtoRSS Specifications for LLM
 
-**Comment: This was passed to my local LLM `qwen3-coder-30b-a3b-instruct-mlx` to write the first draft. It did a decent job, however many improvements and change were made afterwards.**
+**Comment: This was passed to my local LLM `qwen3-coder-30b-a3b-instruct-mlx` to write the first draft. It did a decent job, however many improvements and changes were made afterwards.**
 
 A robust Rust command-line tool for converting a fragment of HTML content to an RSS feed item. It is designed for bloggers who use static HTML pages and want to add RSS feed functionality to their site.
 
