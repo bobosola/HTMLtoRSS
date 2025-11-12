@@ -181,7 +181,6 @@ fn process_html_content(
     processed_html = re_src.replace_all(&processed_html, |caps: &regex::Captures| {
         let attr_value = &caps[1];
         if !attr_value.starts_with("http") {
-            //let absolute_url = base_url_obj.join(attr_value).unwrap_or_else(|_| Url::parse(&format!("{}{}", normalized_base_url, attr_value)).unwrap());
             let absolute_url = utils::merge_url_and_fragment(base_url, attr_value).unwrap();
             format!("src=\"{}\"", absolute_url)
         } else {
@@ -193,7 +192,6 @@ fn process_html_content(
     processed_html = re_href.replace_all(&processed_html, |caps: &regex::Captures| {
         let attr_value = &caps[1];
         if !attr_value.starts_with("http") {
-            //let absolute_url = base_url_obj.join(attr_value).unwrap_or_else(|_| Url::parse(&format!("{}{}", normalized_base_url, attr_value)).unwrap());
             let absolute_url = utils::merge_url_and_fragment(base_url, attr_value).unwrap();
             format!("href=\"{}\"", absolute_url)
         } else {
@@ -208,7 +206,6 @@ fn process_html_content(
         let urls: Vec<&str> = attr_value.split(',').map(|s| s.trim()).collect();
         let processed_urls: Vec<String> = urls.iter().map(|url| {
             if !url.starts_with("http") {
-                //let absolute_url = base_url_obj.join(url).unwrap_or_else(|_| Url::parse(&format!("{}{}", normalized_base_url, url)).unwrap());
                 let absolute_url = utils::merge_url_and_fragment(base_url, attr_value).unwrap();
                 absolute_url.to_string()
             } else {
@@ -237,11 +234,9 @@ fn generate_rss_item(
         // it's a URL to a remote site page, so no merging required
         true => html_path.to_owned(),
         // Its a local file path, so merge with the base URL
+        // avoiding any path overlap
         false => {
-            // Avoid getting incorrect concatenation of "https://site/blog" & "blog/page.html"
-            // as "https://site/blog/blog/page.html"
-            let trimmed_url = utils::remove_last_segment_from_url(base_url)?;
-            utils::merge_url_and_fragment(&trimmed_url, html_path)?
+            utils::merge_remove_overlap(&base_url, html_path)?
         }
     };
 

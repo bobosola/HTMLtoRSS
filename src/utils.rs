@@ -1,4 +1,4 @@
-use chrono::{DateTime, ParseError, FixedOffset, Utc, TimeZone};
+use chrono::{DateTime, ParseError, FixedOffset, Utc};
 use url::Url;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
@@ -41,7 +41,7 @@ pub fn parse_to_rfc2822(input: &str) -> Result<String, ParseError> {
     Ok(utc.to_rfc2822())
 }
 
-/// Intelligently joins a base URL and a path fragment
+/// Joins a base URL and a path fragment
 pub fn merge_url_and_fragment(base_url: &str, fragment: &str) -> Result<String, url::ParseError> {
 
     // If fragment is already a full URL, return it as-is
@@ -69,39 +69,68 @@ pub fn merge_url_and_fragment(base_url: &str, fragment: &str) -> Result<String, 
     Ok(joined.to_string())
 }
 
-// Removes the final file path or directory from a URL
-pub fn remove_last_segment_from_url(url: &str) -> Result<String, url::ParseError> {
-    let parsed_url = Url::parse(url)?;
-
-    // Get current path
-    let current_path = parsed_url.path();
-
-    if current_path.is_empty() || current_path == "/" {
-        return Ok(parsed_url.to_string());
+/// Merges a base URL and a path fragment and removes any overlaps by
+/// handling the case where a base URL and relative path might contain
+/// common segments, e.g. avoiding:
+// https://site/blog  + blog/page.html -> https://site/blog/blog/page.html
+pub fn merge_remove_overlap(base_url: &str, relative_path: &str) -> Result<String, url::ParseError> {
+    // If relative_path is already a full URL, return it as-is
+    if relative_path.starts_with("http") {
+        return Ok(relative_path.to_string());
     }
 
-    // Remove the last segment from path
-    let new_path = if current_path.ends_with('/') {
-        // Path ends with slash, remove last segment
-        let path_without_trailing = &current_path[..current_path.len() - 1];
-        if let Some(last_slash) = path_without_trailing.rfind('/') {
-            &path_without_trailing[..last_slash + 1]
-        } else {
-            "/"
-        }
+    // If relative_path is empty, return base URL
+    if relative_path.is_empty() {
+        return Ok(base_url.to_string());
+    }
+
+    // Handle special URL patterns that shouldn't trigger overlap removal
+    if relative_path.starts_with('/') || relative_path.starts_with("..") {
+        // Root-relative or parent directory paths - use normal join
+        let base = Url::parse(base_url)?;
+        return Ok(base.join(relative_path)?.to_string());
+    }
+
+    // Normalize the base URL to ensure it ends with a slash for proper directory handling
+    let normalized_base = if !base_url.ends_with('/') {
+        format!("{}/", base_url)
     } else {
-        // Path doesn't end with slash, remove last segment
-        if let Some(last_slash) = current_path.rfind('/') {
-            &current_path[..last_slash + 1]
-        } else {
-            "/"
-        }
+        base_url.to_string()
     };
 
-    let mut new_url = parsed_url.clone();
-    new_url.set_path(new_path);
-
-    Ok(new_url.to_string())
+    // Parse the normalized base URL
+    let base = Url::parse(&normalized_base)?;
+    
+    // Get the path segments from the base URL (filter out empty segments)
+    let base_segments: Vec<&str> = base.path_segments()
+        .map(|segments| segments.filter(|s| !s.is_empty()).collect())
+        .unwrap_or_default();
+    
+    // Get the first segment of the relative path (if it has path segments)
+    let relative_first_segment = relative_path.split('/').next().unwrap_or("");
+    
+    // Check if the relative path starts with a segment that's the same as the last segment of base URL path
+    // This indicates potential overlap that we want to avoid
+    let should_strip_base_path = !base_segments.is_empty() && 
+                                 !relative_first_segment.is_empty() &&
+                                 base_segments.last() == Some(&relative_first_segment);
+    
+    let result = if should_strip_base_path {
+        // Remove the last segment from the base URL path to avoid duplication
+        let mut new_base = base.clone();
+        let new_path = if base_segments.len() > 1 {
+            format!("/{}/", base_segments[..base_segments.len() - 1].join("/"))
+        } else {
+            "/".to_string()
+        };
+        new_base.set_path(&new_path);
+        new_base.join(relative_path)?
+    } else {
+        // Normal merge
+        base.join(relative_path)?
+    };
+    
+    Ok(result.to_string())
 }
 
 /// Inserts text before a given text string in a given file path
@@ -201,26 +230,77 @@ mod tests {
         assert_eq!(merged, "http://www.xxx.com/grandparent/path/to/file.htm")
     }
 
-    /******************** URL path removal **********************/
+    /******************** URL merge with overlap removal **********************/
 
     #[test]
-    fn strip_last_dir_from_url() {
-        // Remove the last directory from the path
-        let stripped = remove_last_segment_from_url("http://www.xxx.com/blog/temp/").unwrap();
-        assert_eq!(stripped, "http://www.xxx.com/blog/")
+    fn merge_remove_overlap_basic_case() {
+        // The main case: avoid duplication when relative path starts with same segment as base path ends
+        let merged = merge_remove_overlap("https://site/blog", "blog/page.html").unwrap();
+        assert_eq!(merged, "https://site/blog/page.html")
     }
 
     #[test]
-    fn strip_file_from_url() {
-        // Remove the file from the path
-        let stripped = remove_last_segment_from_url("http://www.xxx.com/blog/file.htm").unwrap();
-        assert_eq!(stripped, "http://www.xxx.com/blog/")
+    fn merge_remove_overlap_with_trailing_slash() {
+        // Should work the same with trailing slash on base URL
+        let merged = merge_remove_overlap("https://site/blog/", "blog/page.html").unwrap();
+        assert_eq!(merged, "https://site/blog/page.html")
     }
 
     #[test]
-    fn strip_nothing_from_url() {
-        // No path or file, so just return the URL
-        let stripped = remove_last_segment_from_url("http://www.xxx.com/").unwrap();
-        assert_eq!(stripped, "http://www.xxx.com/")
+    fn merge_remove_overlap_no_overlap() {
+        // Should work normally when there's no overlap
+        // Base URL without trailing slash should still treat "blog" as a directory when appending
+        let merged = merge_remove_overlap("https://site/blog", "posts/page.html").unwrap();
+        assert_eq!(merged, "https://site/blog/posts/page.html")
+    }
+
+    #[test]
+    fn merge_remove_overlap_root_relative() {
+        // Should not remove overlap for root-relative paths (starting with /)
+        let merged = merge_remove_overlap("https://site/blog", "/other/page.html").unwrap();
+        assert_eq!(merged, "https://site/other/page.html")
+    }
+
+    #[test]
+    fn merge_remove_overlap_parent_dir() {
+        // Should not remove overlap for parent directory paths
+        let merged = merge_remove_overlap("https://site/blog/temp/", "../page.html").unwrap();
+        assert_eq!(merged, "https://site/blog/page.html")
+    }
+
+    #[test]
+    fn merge_remove_overlap_full_url() {
+        // Should return full URL as-is
+        let merged = merge_remove_overlap("https://site/blog", "https://other.com/page.html").unwrap();
+        assert_eq!(merged, "https://other.com/page.html")
+    }
+
+    #[test]
+    fn merge_remove_overlap_empty_path() {
+        // Should return base URL when relative path is empty
+        let merged = merge_remove_overlap("https://site/blog", "").unwrap();
+        assert_eq!(merged, "https://site/blog")
+    }
+
+    #[test]
+    fn merge_remove_overlap_multiple_segments() {
+        // Should only remove the last segment if it matches
+        let merged = merge_remove_overlap("https://site/a/b/c", "c/d/e.html").unwrap();
+        assert_eq!(merged, "https://site/a/b/c/d/e.html")
+    }
+
+    #[test]
+    fn merge_remove_overlap_no_base_path() {
+        // Should work when base URL has no path
+        let merged = merge_remove_overlap("https://site", "blog/page.html").unwrap();
+        assert_eq!(merged, "https://site/blog/page.html")
+    }
+
+    #[test]
+    fn merge_remove_overlap_substring_match() {
+        // Should only match complete path segments, not substrings
+        // "blogger" is not the same as "blog", so no overlap removal
+        let merged = merge_remove_overlap("https://site/blogger/", "blog/page.html").unwrap();
+        assert_eq!(merged, "https://site/blogger/blog/page.html")
     }
 }
