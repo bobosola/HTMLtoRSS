@@ -6,7 +6,7 @@
 
 It inserts the extracted text into your RSS.xml file as a new `item` element with any relative image and link URLs corrected accordingly. It is designed for occasional bloggers who create static HTML pages and who wish to easily add an RSS feed to their site.
 
-There is also a demo `RSS.xml` file with instructions below for setting up a new RSS feed from scratch.
+There is also a demo `rss.xml` file with instructions below for setting up a new RSS feed from scratch.
 
 ## Functionality
 
@@ -16,7 +16,7 @@ There is also a demo `RSS.xml` file with instructions below for setting up a new
 * requires a parent URL to be supplied to convert all relative (or root relative) `href`, `src`, and `srcset` attributes to absolute URLs so that they will work in an external feed reader. E.g. if the chosen page is in the `https://www.site/blog` directory, then use that as the parent URL
 * removes all extraneous whitespace in the extracted content
 * optionally ignores a number of lines from the beginning of the content to allow for the removal of unwanted headings etc.
-* copies the result into the `RSS.xml` file as a new `item` element with an optional date and time which, if omitted, defaults to the time of the insertion.
+* copies the result into the RSS.xml file as a new `item` element with an optional date and time which, if omitted, defaults to the time of the insertion.
 
 ## Usage
 
@@ -37,7 +37,7 @@ Options:
   -V, --version                      Print version
 ```
 
-For example, assuming you are in your site root directory and the file to grab the content from is in the `blog` subdirectory and the `RSS.xml` file is also in the `blog` subdirectory, then run the app like this:
+For example, assuming you are in your site root directory and the file to grab the content from is in the `blog` subdirectory and the RSS.xml file is also in the `blog` subdirectory, then run the app like this:
 
 `HTMLtoRSS --html blog/holiday.html --rss blog/rss.xml --parent-url https://yoursite.com/blog`
 
@@ -88,23 +88,23 @@ To use the app from anywhere on Macs and Unix machines, I suggest either moving 
 
 ## Requirements
 
-You will need a valid `rss.xml` file somewhere locally. You can copy the included demo `rss.xml` file which is a minimal valid RSS.xml file. Change the various values accordingly.
+You will need a valid RSS.xml file somewhere locally. You can copy the included demo `rss.xml` file which is a minimal valid RSS.xml file. Change the various values accordingly.
 
 ## Creating an RSS feed
 
-1) Populate your `rss.xml` file with items as above.
+1) Populate your RSS.xml file with items as above.
 
 2) Upload it to your site.
 
-2) Check the file is valid at [https://validator.w3.org/feed/](https://validator.w3.org/feed/) by entering the full URL of your `rss.xml` file. Note that if you use the option of pasting in the file text as opposed to entering a URL then you will see a `Self reference doesn't match document location` error. This error disappears when using the URL checking method (assuming that you entered the file's URL correctly in the `atom:link` element).
+2) Check the file is valid at [https://validator.w3.org/feed/](https://validator.w3.org/feed/) by entering the full URL of your RSS.xml file. Note that if you use the option of pasting in the file text as opposed to entering a URL then you will see a `Self reference doesn't match document location` error. This error disappears when using the URL checking method (assuming that you entered the file's URL correctly in the `atom:link` element).
 
-3) Place a `link` element in the `head` section of your home page linking to your `rss.xml` file like this:
+3) Place a `link` element in the `head` section of your home page linking to your RSS.xml file like this:
 ```html
 <link rel="alternate" type="application/rss+xml" title="RSS Feed for my Blog" href="/blog/rss.xml">
 ```
 This will allow interested people to subscribe to your feed by pasting your home page URL into their feed reader.
 
-5) Optionally insert an RSS logo of your choice in a suitable location which also links to the `rss.xml` file:
+5) Optionally insert an RSS logo of your choice in a suitable location which also links to the RSS.xml file:
 ```html
 <a href="/blog/rss.xml"><img src="/blog/images/rss_logo.gif" alt="RSS logo" width="36" height="14"></a>
 ```
