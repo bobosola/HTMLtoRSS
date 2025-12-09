@@ -4,19 +4,19 @@
 * a local static HTML5 page, or
 * a URL pointing to a well-formed HTML5 web page
 
-It inserts the extracted text into your RSS.xml file as a new `item` element with relative image and link URLs corrected accordingly. It is designed for occasional bloggers who create static HTML pages and who wish to easily add an RSS feed to their site.
+It inserts the extracted text into your RSS.xml file as a new `item` element with any relative image and link URLs corrected accordingly. It is designed for occasional bloggers who create static HTML pages and who wish to easily add an RSS feed to their site.
 
-There is also a demo RSS.xml file with instructions below for setting up a new RSS feed from scratch.
+There is also a demo `RSS.xml` file with instructions below for setting up a new RSS feed from scratch.
 
 ## Functionality
 
 `HTMLtoRSS` does the following:
-* grabs all the text inside your chosen CSS selector&mdash;the default is "main" to retrieve content from the the `<main>` element, but this can be overridden
-* uses the first `<h1>` text as the item title text, but this can be overridden
-* requires a parent URL to be supplied to convert all relative (or root relative) `href`, `src`, and `srcset` attributes to absolute URLs so that they will work in an external feed reader, e.g. if the chosen page is in the `https://www.site/blog` directory, then use that as the parent URL
+* grabs all the text inside your chosen HTML element (defaults to the `main` element if not specified)
+* uses the first `h1` text as the item title text, but this can be overridden to provide arbitrary text
+* requires a parent URL to be supplied to convert all relative (or root relative) `href`, `src`, and `srcset` attributes to absolute URLs so that they will work in an external feed reader. E.g. if the chosen page is in the `https://www.site/blog` directory, then use that as the parent URL
 * removes all extraneous whitespace in the extracted content
 * optionally ignores a number of lines from the beginning of the content to allow for the removal of unwanted headings etc.
-* copies the result into the RSS.xml file as a new `item` element with an optional date and time which, if omitted, defaults to the time of the insertion.
+* copies the result into the `RSS.xml` file as a new `item` element with an optional date and time which, if omitted, defaults to the time of the insertion.
 
 ## Usage
 
@@ -37,23 +37,23 @@ Options:
   -V, --version                      Print version
 ```
 
-For example, assuming you are in your site root directory and the file to grab the content from is in the `blog` subdirectory and the RSS.xml file is also in the `blog` subdirectory, then run the app like this:
+For example, assuming you are in your site root directory and the file to grab the content from is in the `blog` subdirectory and the `RSS.xml` file is also in the `blog` subdirectory, then run the app like this:
 
 `HTMLtoRSS --html blog/holiday.html --rss blog/rss.xml --parent-url https://yoursite.com/blog`
 
-This will create a new RSS item from all the content in the `<main>` element of the local file `blog/holiday.html` with the title copied from the first `<h1>` element with the item date as the current date and time.
+This will create a new RSS item from all the content in the `main` element of the local file `blog/holiday.html` with the title copied from the first `h1` element with the item date as the current date and time.
 
 Here's another example:
 
 `HTMLtoRSS --html https://yoursite.com/blog/holiday.html --rss blog/rss.xml --parent-url https://yoursite.com/blog --title "My Holday in France" --selector body --lines-to-cut 3 --date-time "2024-01-31 22:30"`
 
-This will create a new RSS item from the `<body>` element of the website page `https://yoursite/blog/holiday.html` with the title "My Holiday in France" and the first 3 content lines removed (perhaps an `<h1>` or other element you didn't want in the feed item) with the date set as `Wed, 31 Jan 2024 22:30:00 +0000` to match the required RSS date format.
+This will create a new RSS item from the `body` element of the website page `https://yoursite/blog/holiday.html` with the title "My Holiday in France" and the first 3 content lines removed (perhaps an `h1` or other element you didn't want in the feed item) with the date set as `Wed, 31 Jan 2024 22:30:00 +0000` to match the required RSS date format.
 
 In both cases, all images, links and other elements with a relative or root-relative URL will be be converted to absolute URLs so that (e.g.) an image in the HTML with a `src` attribute value of `images/holiday01.jpg` wil be converted to `https://yoursite.com/blog/images/holiday01.jpg` so that all resources and links will work in the feed reader.
 
 ## Output
 
-The application produces a populated `<item>` element something like this :
+The application produces a populated `item` XML element something like this :
 
 ```xml
 <item>
@@ -68,7 +68,7 @@ The application produces a populated `<item>` element something like this :
 </item>
 ```
 
-It may seem unintuitive to put the extracted page content into the `<description>` element, but it's common practice, and is allowed in the [RSS 2.0 Specifications](https://www.rssboard.org/rss-specification#hrelementsOfLtitemgt). This approach has the advantage of allowing people to read successive articles in their entirety in a feed reader without having to jump in and out of a browser.
+It may seem unintuitive to put the extracted page content into the `description` element, but it's common practice, and is allowed in the [RSS 2.0 Specifications](https://www.rssboard.org/rss-specification#hrelementsOfLtitemgt). This approach has the advantage of allowing people to read successive articles in their entirety in a feed reader without having to jump in and out of a browser.
 
 ## Build steps
 
@@ -96,9 +96,9 @@ You will need a valid `rss.xml` file somewhere locally. You can copy the include
 
 2) Upload it to your site.
 
-2) Check the file is valid at [https://validator.w3.org/feed/](https://validator.w3.org/feed/) by entering the full URL of your `rss.xml` file. Note that if you use the option of pasting in the file text as opposed to entering a URL then you will see a `Self reference doesn't match document location` error. This error disappears when using the URL checking method (assuming that you entered the file's URL correctly in the `<atom:link>` element).
+2) Check the file is valid at [https://validator.w3.org/feed/](https://validator.w3.org/feed/) by entering the full URL of your `rss.xml` file. Note that if you use the option of pasting in the file text as opposed to entering a URL then you will see a `Self reference doesn't match document location` error. This error disappears when using the URL checking method (assuming that you entered the file's URL correctly in the `atom:link` element).
 
-3) Place a `<link>` element in the `<head>` section of your home page linking to your `rss.xml` file like this:
+3) Place a `link` element in the `head` section of your home page linking to your `rss.xml` file like this:
 ```html
 <link rel="alternate" type="application/rss+xml" title="RSS Feed for my Blog" href="/blog/rss.xml">
 ```
