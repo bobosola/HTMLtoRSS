@@ -49,7 +49,7 @@ Here's another example:
 
 This will create a new RSS item from the `body` element of the website page `https://yoursite/blog/holiday.html` with the title "My Holiday in France" and the first 3 content lines removed (perhaps an `h1` or other element you didn't want in the feed item) with the date set as `Wed, 31 Jan 2024 22:30:00 +0000` to match the required RSS date format.
 
-In both cases, all images, links and other elements with a relative or root-relative URL will be be converted to absolute URLs so that (e.g.) an image in the HTML with a `src` attribute value of `images/holiday01.jpg` wil be converted to `https://yoursite.com/blog/images/holiday01.jpg` so that all resources and links will work in the feed reader.
+In both cases, all images, links and other elements with a relative or root-relative URL will be be converted to absolute URLs so that (e.g.) an image in the HTML with a `src` attribute value of `images/holiday01.jpg` will be converted to `https://yoursite.com/blog/images/holiday01.jpg` so that all resources and links will work in the feed reader.
 
 ## Output
 
